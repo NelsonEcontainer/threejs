@@ -1,4 +1,15 @@
 /* You can add global styles to this file, and also import other style files */
 body {
     overflow-x: hidden;
+    background-color: antiquewhite;
+}
+
+.fade-out {
+    opacity: 0 !important;
+    transition: opacity .05s linear; /* Puedes ajustar la duración de la animación según tus preferencias */
+}
+
+.fade-in {
+    opacity: 1 !important;
+    transition: opacity .05s linear; /* Puedes ajustar la duración de la animación según tus preferencias */
 }

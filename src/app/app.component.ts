@@ -14,37 +14,82 @@ export class AppComponent implements OnInit  {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
-  private model: THREE.Group;
-  private currentModel: THREE.Object3D | null = null;
-  private position: any;
-  private target: any;
-  private scrollY: number = 0;
   private loader = new GLTFLoader();
-  private horizontalPercentage: number = -25;
+  currentModelID: number;
+  scrollY: number;
+
+  modelArray: any[] = [];
+  currentModelIndex: number;
 
   constructor(private el: ElementRef) { }
 
   ngOnInit(): void {
     this.initScene();
-    this.loadModel();
+    this.preloadModels();
     this.animate();
   }
 
+  preloadModels() {
+    this.loader.load('assets/objeto.glb', (result) => {
+      this.modelArray[0] = result.scene; this.displayModel(0)
+      result.scene.rotation.y = Math.PI / 2;
+    });
+    this.loader.load('assets/reffer.glb', (result) => {
+      this.modelArray[1] = result.scene;
+      result.scene.rotation.y = Math.PI / 2;
+    });
+  }
+  
+  displayModel(index: number){
+    console.log(index);
+    console.log(this.currentModelIndex);
+    
+    if( index != this.currentModelIndex ) {
+      this.renderer.domElement.classList.remove('fade-in');
+      this.renderer.domElement.classList.add('fade-out');
+  
+      this.modelArray.forEach( model => {
+        this.scene.remove(model);
+      } );
+  
+      
+      setTimeout(() => {
+        this.renderer.domElement.classList.remove('fade-out');
+        this.renderer.domElement.classList.add('fade-in');
+        
+        this.scene.add(this.modelArray[index]);
+        this.currentModelIndex = index;
+        
+        this.scene.background = null;
+      
+        if(index === 1) {
+          this.camera.position.z = 8.3;
+          this.camera.position.y = 1.5;
+          this.camera.position.x = -0.7;
+        } else {
+          this.camera.position.z = 4;
+          this.camera.position.y = 0;
+          this.camera.position.x = 0;
+        }
+      }, 50);
+    }
+
+  }
+
   private initScene(): void {
-    // Configura la escena, la cámara y el renderizador
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xffffff);
 
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.set(1,1,1);
-    // this.position = this.camera.position;    
     this.renderer = new THREE.WebGLRenderer( { alpha: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.el.nativeElement.appendChild(this.renderer.domElement);
 
     this.renderer.domElement.style.position = "fixed";
     this.renderer.domElement.style.top = "0";
-    // this.renderer.domElement.style.left = '0';
+    this.renderer.domElement.style.left = "0";
+    this.renderer.domElement.style.opacity = "1";
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     this.renderer.setClearColor( 0xff0000, 0 );
@@ -76,29 +121,9 @@ export class AppComponent implements OnInit  {
     
   }
 
-  
-  private loadModel(): void {
-    // Carga el modelo GLB
-    if (this.currentModel) {
-      this.scene.remove(this.currentModel);
-    }
-    this.loader.load('assets/objeto.glb', (gltf) => {
-      this.model = gltf.scene;
-      this.scene.add(this.model);
-      this.scene.background = null;
-      this.currentModel = this.model;
-      gltf.scene.rotation.y = Math.PI / 2;
-
-    }, undefined, (error) => {
-      console.error(error);
-    });
-  }
-
   private animate(): void {
-    // Realiza la animación
     const animate = () => {
       requestAnimationFrame(animate);
-
       this.renderer.render(this.scene, this.camera);
     };    
     animate();
@@ -114,30 +139,17 @@ export class AppComponent implements OnInit  {
               document.body.scrollHeight) -
               document.documentElement.clientHeight)) *
       100;
-    const rotationFactor = 0.005; // Ajusta la velocidad de rotación
+    const rotationFactor = 0.005;
     this.scene.rotation.y = (scrollPercent * 3) * (rotationFactor * 3);
 
     if( scrollPercent < 35 ) {
-      console.log('left');
       this.renderer.domElement.style.left = `${scrollPercent}%`;
+      this.displayModel(0);
 
-      
-    } else if( scrollPercent >= 35 && scrollPercent <= 75  ) {
-      console.log('right');    
-      if (this.currentModel) {
-        this.scene.remove(this.currentModel);
-      }
-
-      this.loader.load('assets/reffer.glb', (gltf) => {
-        // Agrega el nuevo modelo a la escena y actualiza la referencia al modelo actual.
-        const newModel = gltf.scene;
-        this.scene.add(newModel);
-        this.currentModel = newModel;
-      });      
+    } else if( scrollPercent >= 35 && scrollPercent <= 75  ) { 
       this.renderer.domElement.style.left = `${35 - (scrollPercent - 35)}%`;
+      this.displayModel(1);
     }
-    // this.scene.rotation.z = this.scrollY * (rotationFactor / 10);
-    // this.camera.position.z = this.scrollY * rotationFactor
   
   
     console.log(scrollPercent);
